@@ -1,0 +1,6 @@
+# SDK-Pfad – wird von Android Studio automatisch gesetzt
+sdk.dir=/path/to/Android/Sdk
+
+# Trainings-Nummer: die Nummer, die statt z.B. 112 wirklich angerufen wird
+# (Elternteil auf zweitem Gerät, spielt die Rolle der Leitstelle)
+training.number=+49XXXXXXXXXX
