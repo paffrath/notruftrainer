@@ -5,17 +5,13 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Modifier
 import koeln.paffrath.notruftrainer.ui.theme.NotruftrainerTheme
 
 class MainActivity : ComponentActivity() {
@@ -27,15 +23,10 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         setContent {
             NotruftrainerTheme {
-                Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
-                    Box(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .padding(innerPadding)
-                    ) {
-                        NotruftrainerApp(resumeSignal = resumeCounter)
-                    }
-                }
+                NotruftrainerApp(
+                    resumeSignal = resumeCounter,
+                    onExitKiosk = { KioskManager.exitKiosk(this@MainActivity) },
+                )
             }
         }
     }
@@ -48,7 +39,7 @@ class MainActivity : ComponentActivity() {
 }
 
 @Composable
-private fun NotruftrainerApp(resumeSignal: Int) {
+private fun NotruftrainerApp(resumeSignal: Int, onExitKiosk: () -> Unit) {
     var showDialer by remember { mutableStateOf(false) }
     LaunchedEffect(resumeSignal) {
         showDialer = false
@@ -56,6 +47,8 @@ private fun NotruftrainerApp(resumeSignal: Int) {
     if (showDialer) {
         DialerScreen()
     } else {
-        PinScreen(onEmergency = { showDialer = true })
+        key(resumeSignal) {
+            PinScreen(onEmergency = { showDialer = true }, onExit = onExitKiosk)
+        }
     }
 }

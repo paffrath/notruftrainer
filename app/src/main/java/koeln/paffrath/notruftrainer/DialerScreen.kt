@@ -4,22 +4,27 @@ import android.Manifest
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
-import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material3.FloatingActionButton
-import androidx.compose.material3.MaterialTheme
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Call
+import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material3.Icon
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -36,6 +41,18 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
 import androidx.core.net.toUri
+
+private val ScreenBackground = Color(0xFFF4F2F0)
+private val TextPrimary = Color(0xFF1B1B1B)
+private val TextSecondary = Color(0xFF7A7A7A)
+private val ChipBackground = Color(0xFFE5E2E0)
+private val CallGreen = Color(0xFF00A651)
+private val MedInfoRed = Color(0xFFD9532F)
+
+private val KEY_LETTERS = mapOf(
+    "2" to "ABC", "3" to "DEF", "4" to "GHI", "5" to "JKL", "6" to "MNO",
+    "7" to "PQRS", "8" to "TUV", "9" to "WXYZ", "0" to "+",
+)
 
 @Composable
 fun DialerScreen() {
@@ -70,109 +87,193 @@ fun DialerScreen() {
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .padding(horizontal = 24.dp, vertical = 32.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
+            .background(ScreenBackground)
+            .statusBarsPadding()
+            .navigationBarsPadding()
+            .padding(horizontal = 20.dp),
     ) {
-        NumberDisplay(input = input, displayName = mapping?.displayName)
-        Spacer(Modifier.weight(1f))
-        Keypad(onDigit = { digit -> input += digit })
-        Spacer(Modifier.height(24.dp))
-        CallRow(
-            onCall = ::attemptCall,
-            onDelete = { if (input.isNotEmpty()) input = input.dropLast(1) },
-            callEnabled = mapping != null,
-        )
-    }
-}
-
-@Composable
-private fun NumberDisplay(input: String, displayName: String?) {
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(top = 24.dp, bottom = 16.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-    ) {
+        Spacer(Modifier.height(16.dp))
         Text(
-            text = input.ifEmpty { " " },
-            fontSize = 44.sp,
-            fontWeight = FontWeight.Light,
-            color = MaterialTheme.colorScheme.onSurface,
+            text = "Notruf",
+            fontSize = 26.sp,
+            fontWeight = FontWeight.Bold,
+            color = TextPrimary,
+            modifier = Modifier.padding(start = 4.dp),
         )
-        if (displayName != null) {
+        Spacer(Modifier.height(28.dp))
+        if (input.isEmpty()) {
+            AddContactsHint()
+        }
+        Spacer(Modifier.weight(1f))
+        if (input.isEmpty()) {
+            Surface(
+                shape = RoundedCornerShape(50),
+                color = ChipBackground,
+                modifier = Modifier.align(Alignment.CenterHorizontally),
+            ) {
+                Text(
+                    text = "Notrufnummer",
+                    fontSize = 15.sp,
+                    color = Color(0xFF4A4A4A),
+                    modifier = Modifier.padding(horizontal = 20.dp, vertical = 10.dp),
+                )
+            }
+        } else {
             Text(
-                text = displayName,
-                fontSize = 18.sp,
-                color = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.padding(top = 4.dp),
+                text = input,
+                fontSize = 46.sp,
+                color = TextPrimary,
+                modifier = Modifier.align(Alignment.CenterHorizontally),
             )
         }
+        Spacer(Modifier.weight(1f))
+        DialPad(
+            onDigit = { digit -> input += digit },
+            modifier = Modifier.align(Alignment.CenterHorizontally),
+        )
+        Spacer(Modifier.height(14.dp))
+        BottomActionRow(
+            onCall = ::attemptCall,
+            onDelete = { if (input.isNotEmpty()) input = input.dropLast(1) },
+            modifier = Modifier.align(Alignment.CenterHorizontally),
+        )
+        Spacer(Modifier.height(20.dp))
     }
 }
 
 @Composable
-private fun Keypad(onDigit: (String) -> Unit) {
+private fun AddContactsHint() {
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = Modifier.padding(start = 4.dp),
+    ) {
+        Surface(
+            shape = CircleShape,
+            color = ChipBackground,
+            modifier = Modifier.size(46.dp),
+        ) {
+            Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
+                Text(
+                    text = "+",
+                    fontSize = 24.sp,
+                    color = Color(0xFF6A6A6A),
+                )
+            }
+        }
+        Spacer(Modifier.width(14.dp))
+        Text(
+            text = "+ tippen & Notfallkontakte\nhinzufügen",
+            fontSize = 15.sp,
+            lineHeight = 21.sp,
+            color = Color(0xFF2E2E2E),
+        )
+    }
+}
+
+@Composable
+private fun DialPad(onDigit: (String) -> Unit, modifier: Modifier = Modifier) {
     val rows = listOf(
         listOf("1", "2", "3"),
         listOf("4", "5", "6"),
         listOf("7", "8", "9"),
         listOf("*", "0", "#"),
     )
-    Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+    Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(8.dp)) {
         rows.forEach { row ->
-            Row(horizontalArrangement = Arrangement.spacedBy(32.dp)) {
-                row.forEach { key -> KeypadButton(key) { onDigit(key) } }
+            Row(horizontalArrangement = Arrangement.spacedBy(28.dp)) {
+                row.forEach { key -> DialKey(key) { onDigit(key) } }
             }
         }
     }
 }
 
 @Composable
-private fun KeypadButton(label: String, onClick: () -> Unit) {
+private fun DialKey(label: String, onClick: () -> Unit) {
     Surface(
         onClick = onClick,
         shape = CircleShape,
-        color = MaterialTheme.colorScheme.surfaceVariant,
-        modifier = Modifier.size(72.dp),
+        color = Color.Transparent,
+        modifier = Modifier.size(width = 88.dp, height = 70.dp),
     ) {
-        Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
+        Column(
+            modifier = Modifier.fillMaxSize(),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center,
+        ) {
             Text(
                 text = label,
-                fontSize = 32.sp,
-                fontWeight = FontWeight.Light,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                fontSize = 34.sp,
+                color = TextPrimary,
             )
+            val letters = KEY_LETTERS[label]
+            if (letters != null) {
+                Text(
+                    text = letters,
+                    fontSize = 10.sp,
+                    color = TextSecondary,
+                    letterSpacing = 1.5.sp,
+                )
+            }
         }
     }
 }
 
 @Composable
-private fun CallRow(onCall: () -> Unit, onDelete: () -> Unit, callEnabled: Boolean) {
+private fun BottomActionRow(onCall: () -> Unit, onDelete: () -> Unit, modifier: Modifier = Modifier) {
     Row(
+        modifier = modifier,
+        horizontalArrangement = Arrangement.spacedBy(28.dp),
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(32.dp),
     ) {
-        Spacer(Modifier.size(56.dp))
-        FloatingActionButton(
-            onClick = onCall,
-            containerColor = if (callEnabled) Color(0xFF4CAF50) else Color(0xFFBDBDBD),
-            contentColor = Color.White,
-            shape = CircleShape,
-            modifier = Modifier.size(72.dp),
+        Box(
+            contentAlignment = Alignment.Center,
+            modifier = Modifier.size(width = 88.dp, height = 72.dp),
         ) {
-            Text(text = "📞", fontSize = 28.sp)
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                Icon(
+                    imageVector = Icons.Filled.Favorite,
+                    contentDescription = null,
+                    tint = MedInfoRed,
+                    modifier = Modifier.size(20.dp),
+                )
+                Text(
+                    text = "Med. Infos",
+                    fontSize = 12.sp,
+                    color = MedInfoRed,
+                )
+            }
+        }
+        Box(
+            contentAlignment = Alignment.Center,
+            modifier = Modifier.size(width = 88.dp, height = 72.dp),
+        ) {
+            Surface(
+                onClick = onCall,
+                shape = CircleShape,
+                color = CallGreen,
+                modifier = Modifier.size(68.dp),
+            ) {
+                Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
+                    Icon(
+                        imageVector = Icons.Filled.Call,
+                        contentDescription = "Anrufen",
+                        tint = Color.White,
+                        modifier = Modifier.size(30.dp),
+                    )
+                }
+            }
         }
         Surface(
             onClick = onDelete,
             shape = CircleShape,
             color = Color.Transparent,
-            modifier = Modifier.size(56.dp),
+            modifier = Modifier.size(width = 88.dp, height = 72.dp),
         ) {
             Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
                 Text(
                     text = "⌫",
-                    fontSize = 24.sp,
-                    color = MaterialTheme.colorScheme.onSurface,
+                    fontSize = 26.sp,
+                    color = TextPrimary,
                 )
             }
         }

@@ -53,4 +53,38 @@ object KioskManager {
             activity.startLockTask()
         }
     }
+
+    fun exitKiosk(activity: Activity) {
+        val context = activity.applicationContext
+        context.stopService(Intent(context, PowerButtonDetectorService::class.java))
+
+        val am = context.getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager
+        if (am.lockTaskModeState != ActivityManager.LOCK_TASK_MODE_NONE) {
+            activity.stopLockTask()
+        }
+
+        val dpm = context.getSystemService(Context.DEVICE_POLICY_SERVICE) as DevicePolicyManager
+        if (dpm.isDeviceOwnerApp(context.packageName)) {
+            val admin = ComponentName(context, AdminReceiver::class.java)
+            dpm.clearPackagePersistentPreferredActivities(admin, context.packageName)
+            context.getSharedPreferences("kiosk", Context.MODE_PRIVATE)
+                .edit().putBoolean("home_set", false).apply()
+        }
+
+        launchSystemLauncher(context)
+    }
+
+    private fun launchSystemLauncher(context: Context) {
+        val homeIntent = Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_HOME)
+        val launcher = context.packageManager
+            .queryIntentActivities(homeIntent, 0)
+            .firstOrNull { it.activityInfo.packageName != context.packageName }
+            ?: return
+        val intent = Intent(Intent.ACTION_MAIN).apply {
+            addCategory(Intent.CATEGORY_HOME)
+            setClassName(launcher.activityInfo.packageName, launcher.activityInfo.name)
+            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        }
+        context.startActivity(intent)
+    }
 }
