@@ -22,3 +22,6 @@ captures/
 
 # MacOS
 .DS_Store
+
+# Claude Code
+.claude/
