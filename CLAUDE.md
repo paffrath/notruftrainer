@@ -54,12 +54,13 @@ adb -s <serial> install -r app/build/outputs/apk/debug/app-debug.apk
 adb -s <serial> shell am start -n koeln.paffrath.notruftrainer/.MainActivity
 ```
 
-Geräte (beide Samsung Galaxy A20e, SM-A202F, Android 11):
+Geräte (alle Samsung Galaxy A20e, SM-A202F, Android 11):
 
 | Serial | Gerät |
 |---|---|
 | `RF8M62842CH` | Erstgerät |
 | `R58N35Z6K2X` | Zweitgerät (eingerichtet 2026-10-30, Telekom-SIM) |
+| `RF8M73185FT` | Drittgerät (eingerichtet 2026-10-30, Telekom-SIM) |
 
 Play Store und Galaxy Store sind auf den Geräten entfernt — App-Updates nur per `adb install -r`.
 
@@ -110,12 +111,13 @@ Schlimmster Fall: erneuter Factory Reset.
 - **Anrufe brauchen Telecom-Pakete in der Lock-Task-Whitelist.** `com.android.phone`, `com.android.server.telecom`, `com.android.dialer`, `com.samsung.android.dialer`, `com.samsung.android.incallui` sind whitelisted, sonst kann die System-Anrufoberfläche während Lock-Task nicht erscheinen.
 - **Der System-Anrufbildschirm zeigt den Kontaktnamen, nicht den `displayName` aus dem Mapping.** `Intent.ACTION_CALL` übergibt nur die `tel:`-URI. Ohne den Kontakt-Trick (Einrichtungsschritt 7) steht dort die echte Zielnummer. Jedes neue Mapping braucht einen eigenen Kontakt.
 - **`pm uninstall --user 0` kann den Lock-Task beenden** (Launcher springt kurz nach vorne). Danach immer `am start ... MainActivity` und `mLockTaskModeState` prüfen.
-- **5×-Power-Notruf beim Debuggen:** wiederholte `input keyevent KEYCODE_WAKEUP`/Screen-Toggles per adb können den `PowerButtonDetectorService` auslösen → echter Trainingsanruf.
+- **5×-Power-Notruf beim Debuggen:** wiederholte `input keyevent KEYCODE_WAKEUP`/Screen-Toggles per adb können den `PowerButtonDetectorService` auslösen → echter Trainingsanruf (passiert beim Einrichten des Drittgeräts). Das Display auf dem Sperrbildschirm geht nach wenigen Sekunden aus, jedes Wecken zählt mit. Nach dem Reboot-Test daher lieber am Gerät selbst entsperren. Anrufprotokoll ist per adb nicht lesbar (`READ_CALL_LOG` fehlt) — stattdessen `dumpsys telecom` prüfen.
+- **Nach Reboot ist Lock-Task zunächst `NONE`**, solange der Sperrbildschirm angezeigt wird (bei angestecktem USB liegt außerdem der Samsung-USB-Dialog `MtpApplication` oben). Erst nach dem Entsperren läuft `onResume()` und der Lock-Task geht auf `LOCKED` — das ist kein Fehler.
 - **Escaping über `adb shell`:** Leerzeichen in `content --bind`-Werten brauchen `\ `, Semikolons in `settings put` brauchen `\;` (lokale Shell → adb → Remote-sh).
 
 ## Status & open items
 
-Pfad A ist auf beiden Geräten produktiv (Stand 2026-10-30): PIN-Screen-Simulation, Notruf-Dialer, Anruf an die Trainings-Nummer mit Kontaktnamen im Anrufbildschirm, 5×-Power-Notruf, Device-Owner-Kiosk mit Lock-Task, Boot direkt in die App, Kiosk-Exit per PIN `0000`.
+Pfad A ist auf allen drei Geräten produktiv (Stand 2026-10-30): PIN-Screen-Simulation, Notruf-Dialer, Anruf an die Trainings-Nummer mit Kontaktnamen im Anrufbildschirm, 5×-Power-Notruf, Device-Owner-Kiosk mit Lock-Task, Boot direkt in die App, Kiosk-Exit per PIN `0000`.
 
 Noch offen / nice-to-have:
 - Back-Button im Dialer (aktuell kein Weg zurück zum PIN-Screen ohne Anruf)
